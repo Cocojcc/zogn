@@ -18,7 +18,7 @@ def build_article():
         pre_dirs = list(set(conf.CONTENT_PATH.parts) ^ set(conf.POST_PATH.parts))
         path_prefix = conf.HTML_OUTPUT_PATH.joinpath("/".join(pre_dirs))
         path_prefix.mkdir(parents=True, exist_ok=True)
-        save_path = path_prefix.joinpath(article["title"] + ".html")
+        save_path = path_prefix.joinpath(article["slug"] + ".html")
         writer(save_path, html)
 
 
