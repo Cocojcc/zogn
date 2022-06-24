@@ -22,10 +22,10 @@ def build_article():
         writer(save_path, html)
 
 
-def build_category():
+def build_tags():
     tags_dict = parse_tag()
     for tag_name, articles in tags_dict.items():
-        html = render_to_html("post/tag.html", articles=articles, tag_name=category_name)
+        html = render_to_html("post/tag.html", articles=articles, tag_name=tag_name)
         path_prefix = conf.HTML_OUTPUT_PATH.joinpath("tag")
         path_prefix.mkdir(parents=True, exist_ok=True)
         save_path = path_prefix.joinpath(tag_name + ".html")
@@ -62,6 +62,14 @@ def build_static():
     if static.exists():
         shutil.rmtree(static)
     shutil.copytree(conf.STATIC_FOLDER, static)
+
+
+def build_all_tags():
+    tags = parse_tag()
+    tags = [{"name": name, "count": len(articles)} for name, articles in tags.items()]
+    html = render_to_html("tags.html", tags=tags)
+    save_path = conf.HTML_OUTPUT_PATH.joinpath("tags.html")
+    writer(save_path, html)
 
 
 def build_index():

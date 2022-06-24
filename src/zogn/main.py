@@ -1,5 +1,5 @@
-from zogn.builders import build_article, build_category, build_about, build_links, build_sitemap, writer, build_static, \
-    build_index
+from zogn.builders import build_article, build_tags, build_about, build_links, build_sitemap, writer, build_static, \
+    build_index, build_all_tags
 import click
 from datetime import date
 from slugify import slugify
@@ -37,9 +37,10 @@ def build():
     build_links()
     build_sitemap()
     build_about()
-    build_category()
+    build_tags()
     build_static()
     build_index()
+    build_all_tags()
 
 
 @cli.command("new", short_help="新建文章")
