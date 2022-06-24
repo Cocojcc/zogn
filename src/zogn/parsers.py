@@ -53,13 +53,14 @@ def parse_sitemap():
     return articles
 
 
-def parse_category():
-    categories_dict = {}
+def parse_tag():
+    tags_dict = {}
     articles = load_all_articles()
     for article in articles:
-        category_name = article["category"]
-        categories_dict.setdefault(category_name, []).append(article)
-    return categories_dict
+        tags = article["tags"]
+        for tag_name in tags:
+            tags_dict.setdefault(tag_name, []).append(article)
+    return tags_dict
 
 
 def parse_about():

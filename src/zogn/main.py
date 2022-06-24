@@ -48,7 +48,7 @@ def build():
 def generate_markdown(filename):
     tmp_str_list = []
     title = exact_filename(filename)
-    data = {"title": title, "slug": slugify(title), "category": "draft",
+    data = {"title": title, "slug": slugify(title), "tags": [],
             "date": date.today().strftime("%Y-%m-%d"), "status": "draft"}
     for key, val in data.items():
         tmp_str_list.append(f"{key}: {val}")

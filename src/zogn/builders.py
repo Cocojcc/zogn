@@ -4,7 +4,7 @@ import markdown
 from jinja2 import Environment, FileSystemLoader
 from zogn import conf
 
-from zogn.parsers import parse_category, parse_sitemap, load_all_articles, parse_index
+from zogn.parsers import parse_tag, parse_sitemap, load_all_articles, parse_index
 
 env = Environment(loader=FileSystemLoader(conf.THEME_PATH / conf.TEMPLATES_FOLDER))
 
@@ -23,12 +23,12 @@ def build_article():
 
 
 def build_category():
-    categories_dict = parse_category()
-    for category_name, articles in categories_dict.items():
-        html = render_to_html("post/category.html", articles=articles)
-        path_prefix = conf.HTML_OUTPUT_PATH.joinpath("category")
+    tags_dict = parse_tag()
+    for tag_name, articles in tags_dict.items():
+        html = render_to_html("post/tag.html", articles=articles, tag_name=category_name)
+        path_prefix = conf.HTML_OUTPUT_PATH.joinpath("tag")
         path_prefix.mkdir(parents=True, exist_ok=True)
-        save_path = path_prefix.joinpath(category_name + ".html")
+        save_path = path_prefix.joinpath(tag_name + ".html")
         writer(save_path, html)
 
 

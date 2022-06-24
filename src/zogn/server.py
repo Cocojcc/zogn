@@ -1,5 +1,5 @@
 from flask import Flask
-from zogn.parsers import parse_article, parse_sitemap, parse_category, parse_about, parse_index, SLUG_TO_PATH
+from zogn.parsers import parse_article, parse_sitemap, parse_tag, parse_about, parse_index, SLUG_TO_PATH
 from zogn.builders import render_to_html
 from zogn import conf
 
@@ -22,11 +22,11 @@ def detail(slug):
     return render_to_html("post/detail.html", article=metadata)
 
 
-@app.route("/category/<name>.html")
+@app.route("/tag/<name>.html")
 def category(name):
-    categories = parse_category()
-    articles = categories.get(name) or []
-    return render_to_html("post/category.html", articles=articles)
+    tags = parse_tag()
+    articles = tags.get(name) or []
+    return render_to_html("post/tag.html", articles=articles, tag_name=name)
 
 
 @app.route("/about.html")
@@ -38,6 +38,13 @@ def about():
 @app.route("/links.html")
 def links():
     return render_to_html("links.html", links=conf.LINKS)
+
+
+@app.route("/tags.html")
+def tags():
+    tags = parse_tag()
+    tags = [{"name": name, "count": len(articles)} for name, articles in tags.items()]
+    return render_to_html("tags.html", tags=tags)
 
 
 @app.route("/sitemap.xml")
