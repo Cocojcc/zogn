@@ -1,11 +1,12 @@
 from zogn.builders import build_article, build_category, build_about, build_links, build_sitemap, writer, build_static, \
-    build_index
+    build_index, build_tags, build_all_tags
 import click
 from datetime import date
 from slugify import slugify
 from zogn.server import app
 from zogn import conf
 import functools
+import shutil
 
 
 def root_command(func):
@@ -33,11 +34,14 @@ def cli():
 @cli.command("build", short_help="构建项目")
 @root_command
 def build():
+    shutil.rmtree(conf.HTML_OUTPUT_PATH)
     build_article()
     build_links()
     build_sitemap()
     build_about()
     build_category()
+    build_tags()
+    build_all_tags()
     build_static()
     build_index()
 
@@ -48,7 +52,7 @@ def build():
 def generate_markdown(filename):
     tmp_str_list = []
     title = exact_filename(filename)
-    data = {"title": title, "slug": slugify(title), "category": "draft",
+    data = {"title": title, "slug": slugify(title), "category": "draft",  "tags": [],
             "date": date.today().strftime("%Y-%m-%d"), "status": "draft"}
     for key, val in data.items():
         tmp_str_list.append(f"{key}: {val}")

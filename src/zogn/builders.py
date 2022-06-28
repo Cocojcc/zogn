@@ -4,7 +4,7 @@ import markdown
 from jinja2 import Environment, FileSystemLoader
 from zogn import conf
 
-from zogn.parsers import parse_category, parse_sitemap, load_all_articles, parse_index
+from zogn.parsers import parse_category, parse_sitemap, load_all_articles, parse_index, parse_tag
 
 env = Environment(loader=FileSystemLoader(conf.THEME_PATH / conf.TEMPLATES_FOLDER))
 
@@ -18,7 +18,7 @@ def build_article():
         pre_dirs = list(set(conf.CONTENT_PATH.parts) ^ set(conf.POST_PATH.parts))
         path_prefix = conf.HTML_OUTPUT_PATH.joinpath("/".join(pre_dirs))
         path_prefix.mkdir(parents=True, exist_ok=True)
-        save_path = path_prefix.joinpath(article["title"] + ".html")
+        save_path = path_prefix.joinpath(article["slug"] + ".html")
         writer(save_path, html)
 
 
@@ -30,6 +30,24 @@ def build_category():
         path_prefix.mkdir(parents=True, exist_ok=True)
         save_path = path_prefix.joinpath(category_name + ".html")
         writer(save_path, html)
+
+
+def build_tags():
+    tags_dict = parse_tag()
+    for tag_name, articles in tags_dict.items():
+        html = render_to_html("post/tag.html", articles=articles, tag_name=tag_name)
+        path_prefix = conf.HTML_OUTPUT_PATH.joinpath("tag")
+        path_prefix.mkdir(parents=True, exist_ok=True)
+        save_path = path_prefix.joinpath(tag_name + ".html")
+        writer(save_path, html)
+
+
+def build_all_tags():
+    tags = parse_tag()
+    tags = [{"name": name, "count": len(articles)} for name, articles in tags.items()]
+    html = render_to_html("tags.html", tags=tags)
+    save_path = conf.HTML_OUTPUT_PATH.joinpath("tags.html")
+    writer(save_path, html)
 
 
 def build_about():
