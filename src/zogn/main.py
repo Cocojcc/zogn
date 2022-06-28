@@ -6,6 +6,7 @@ from slugify import slugify
 from zogn.server import app
 from zogn import conf
 import functools
+import shutil
 
 
 def root_command(func):
@@ -33,6 +34,7 @@ def cli():
 @cli.command("build", short_help="构建项目")
 @root_command
 def build():
+    shutil.rmtree(conf.HTML_OUTPUT_PATH)
     build_article()
     build_links()
     build_sitemap()

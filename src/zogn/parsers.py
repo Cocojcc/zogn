@@ -6,6 +6,14 @@ from zogn.conf import CONTENT_PATH, POST_PATH
 SLUG_TO_PATH = {}
 
 
+def content2markdown(content):
+    content = markdown.markdown(content, extensions=[
+        'markdown.extensions.extra',
+        'markdown.extensions.codehilite',
+    ])
+    return content
+
+
 def parse_markdown(file):
     frontmatter, content = "", ""
     firstline = file.readline().strip()
@@ -26,7 +34,7 @@ def load_all_articles():
             metadata, content = parse_markdown(f)
             if metadata["status"] == "draft":
                 continue
-            metadata["content"] = content
+            metadata["body"] = content2markdown(content)
             articles.append(metadata)
             SLUG_TO_PATH[metadata["slug"]] = p.as_posix()
     articles.sort(key=lambda x: x["date"], reverse=True)
@@ -40,11 +48,7 @@ def parse_index():
 def parse_article(path):
     with open(path, "r", encoding="utf-8") as f:
         metadata, content = parse_markdown(f)
-    content = markdown.markdown(content, extensions=[
-        'markdown.extensions.extra',
-        'markdown.extensions.codehilite',
-    ])
-    metadata["body"] = content
+    metadata["body"] = content2markdown(content)
     return metadata
 
 
@@ -66,8 +70,5 @@ def parse_tag():
 def parse_about():
     about_path = CONTENT_PATH / "about.md"
     with open(about_path, "r", encoding="utf-8") as f:
-        body = markdown.markdown(f.read(), extensions=[
-            'markdown.extensions.extra',
-            'markdown.extensions.codehilite',
-        ])
+        body = content2markdown(f.read())
     return body
