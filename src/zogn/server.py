@@ -1,3 +1,4 @@
+import flask
 from flask import Flask
 from zogn.parsers import parse_article, parse_sitemap, parse_tag, parse_about, parse_index, SLUG_TO_PATH
 from zogn.builders import render_to_html
@@ -50,7 +51,8 @@ def tags():
 @app.route("/sitemap.xml")
 def sitemap():
     articles = parse_sitemap()
-    return render_to_html("sitemap.xml", articles=articles)
+    xml = render_to_html("sitemap.xml", articles=articles)
+    return flask.Response(xml, mimetype="application/xml")
 
 
 if __name__ == '__main__':
