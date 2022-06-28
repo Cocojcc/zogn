@@ -22,7 +22,7 @@ DEFAULT_POST_TEMPLATE = """\n
 
 TOML_TEMPLATE = '''\n
 SITE_NAME = "zo9n"
-SITE_KEYWORDS = "Python,Django,backend,blog,web,MySQL optimization,website optimization,random thoughts,coding"
+SITE_KEYWORDS = "zo9n,node,vue,Python,Django,backend,blog,web,random thoughts,coding"
 SITE_DESCRIPTION = "This is a salted fish coder developed website which mainly records and shares coding notes, random thoughts."
 SITE_URL = "https://zo9n.com"
 

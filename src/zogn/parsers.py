@@ -48,6 +48,10 @@ def parse_index():
 def parse_article(path):
     with open(path, "r", encoding="utf-8") as f:
         metadata, content = parse_markdown(f)
+    content = markdown.markdown(content, extensions=[
+        'markdown.extensions.extra',
+        'markdown.extensions.codehilite',
+    ])
     metadata["body"] = content2markdown(content)
     return metadata
 
@@ -55,6 +59,15 @@ def parse_article(path):
 def parse_sitemap():
     articles = load_all_articles()
     return articles
+
+
+def parse_category():
+    categories_dict = {}
+    articles = load_all_articles()
+    for article in articles:
+        category_name = article["category"]
+        categories_dict.setdefault(category_name, []).append(article)
+    return categories_dict
 
 
 def parse_tag():

@@ -1,5 +1,5 @@
-from zogn.builders import build_article, build_tags, build_about, build_links, build_sitemap, writer, build_static, \
-    build_index, build_all_tags
+from zogn.builders import build_article, build_category, build_about, build_links, build_sitemap, writer, build_static, \
+    build_index, build_tags, build_all_tags
 import click
 from datetime import date
 from slugify import slugify
@@ -39,7 +39,9 @@ def build():
     build_links()
     build_sitemap()
     build_about()
+    build_category()
     build_tags()
+    build_all_tags()
     build_static()
     build_index()
     build_all_tags()
@@ -51,7 +53,7 @@ def build():
 def generate_markdown(filename):
     tmp_str_list = []
     title = exact_filename(filename)
-    data = {"title": title, "slug": slugify(title), "tags": [],
+    data = {"title": title, "slug": slugify(title), "category": "draft", "tags": [],
             "date": date.today().strftime("%Y-%m-%d"), "status": "draft"}
     for key, val in data.items():
         tmp_str_list.append(f"{key}: {val}")
