@@ -42,17 +42,18 @@ try:
 except:
     settings = {}
 
-SITE_SETTINGS = {
-    "SITE_NAME": settings.get("SITE_NAME"),
-    "SITE_KEYWORDS": settings.get("SITE_KEYWORDS"),
-    "SITE_DESCRIPTION": settings.get("SITE_DESCRIPTION"),
-    "SITE_URL": settings.get("SITE_URL"),
-    "CURRENT_YEAR": date.today().year
-}
-
 LINKS = settings.get("LINKS")
 
 ANALYTICS_CODE = settings.get("ANALYTICS_CODE")
 
 STATIC_FOLDER = THEME_PATH.joinpath(settings.get("STATIC_FOLDER", ""))
 TEMPLATES_FOLDER = THEME_PATH.joinpath(settings.get("TEMPLATES_FOLDER", ""))
+
+SITE_SETTINGS = {
+    "SITE_NAME": settings.get("SITE_NAME"),
+    "SITE_KEYWORDS": settings.get("SITE_KEYWORDS"),
+    "SITE_DESCRIPTION": settings.get("SITE_DESCRIPTION"),
+    "SITE_URL": settings.get("SITE_URL"),
+    "CURRENT_YEAR": date.today().year,
+    "ANALYTICS_CODE": ANALYTICS_CODE
+}
