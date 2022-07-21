@@ -44,7 +44,6 @@ def build():
     build_all_tags()
     build_static()
     build_index()
-    build_all_tags()
 
 
 @cli.command("new", short_help="新建文章")

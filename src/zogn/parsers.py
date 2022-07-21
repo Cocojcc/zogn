@@ -1,16 +1,49 @@
-import markdown
+from xml.etree import ElementTree as etree
+
 import yaml
+from markdown import Markdown
+from markdown.inlinepatterns import LinkInlineProcessor, IMAGE_LINK_RE
 
 from zogn.conf import CONTENT_PATH, POST_PATH
 
 SLUG_TO_PATH = {}
 
 
+class ImageInlineProcessor(LinkInlineProcessor):
+    """ Return a img element from the given match. """
+
+    def handleMatch(self, m, data):
+        text, index, handled = self.getText(data, m.end(0))
+        if not handled:
+            return None, None, None
+
+        src, title, index, handled = self.getLink(data, index)
+        if not handled:
+            return None, None, None
+
+        el = etree.Element("img")
+        el.set("src", src)
+        if title is not None:
+            el.set("title", title)
+
+        # TODO 当图片加载失败时，自定义处理方案
+        return el, m.start(0), index
+
+
+class MyMarkdown(Markdown):
+
+    def build_parser(self):
+        super().build_parser()
+        self.inlinePatterns.register(ImageInlineProcessor(IMAGE_LINK_RE, self), 'image_link', 150)
+        return self
+
+
 def content2markdown(content):
-    content = markdown.markdown(content, extensions=[
+    md = MyMarkdown(extensions=[
         'markdown.extensions.extra',
         'markdown.extensions.codehilite',
     ])
+    content = md.convert(content)
     return content
 
 
@@ -48,10 +81,6 @@ def parse_index():
 def parse_article(path):
     with open(path, "r", encoding="utf-8") as f:
         metadata, content = parse_markdown(f)
-    content = markdown.markdown(content, extensions=[
-        'markdown.extensions.extra',
-        'markdown.extensions.codehilite',
-    ])
     metadata["body"] = content2markdown(content)
     return metadata
 

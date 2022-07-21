@@ -1,10 +1,11 @@
 import shutil
 
-import markdown
 from jinja2 import Environment, FileSystemLoader
+
 from zogn import conf
 
-from zogn.parsers import parse_category, parse_sitemap, load_all_articles, parse_index, parse_tag
+from zogn.parsers import parse_category, parse_sitemap, load_all_articles, parse_index, parse_tag, MyMarkdown, \
+    content2markdown
 
 env = Environment(loader=FileSystemLoader(conf.THEME_PATH / conf.TEMPLATES_FOLDER))
 
@@ -53,10 +54,7 @@ def build_all_tags():
 def build_about():
     about_path = conf.CONTENT_PATH / "about.md"
     with open(about_path, "r", encoding="utf-8") as f:
-        body = markdown.markdown(f.read(), extensions=[
-            'markdown.extensions.extra',
-            'markdown.extensions.codehilite',
-        ])
+        body = content2markdown(f.read())
     html = render_to_html("about.html", body=body)
     save_path = conf.HTML_OUTPUT_PATH.joinpath("about.html")
     writer(save_path, html)
@@ -98,3 +96,13 @@ def render_to_html(template, **kwargs):
 def writer(filepath, html):
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(html)
+
+
+def read_md(path):
+    with open(path, "r") as f:
+        md = MyMarkdown(extensions=[
+            'markdown.extensions.extra',
+            'markdown.extensions.codehilite',
+        ])
+        da = md.convert(f.read())
+    return da
