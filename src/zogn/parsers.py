@@ -27,6 +27,7 @@ class ImageInlineProcessor(LinkInlineProcessor):
             el.set("title", title)
 
         # TODO 当图片加载失败时，自定义处理方案
+        el.set("data-src", src)
         return el, m.start(0), index
 
 
@@ -82,6 +83,7 @@ def parse_article(path):
     with open(path, "r", encoding="utf-8") as f:
         metadata, content = parse_markdown(f)
     metadata["body"] = content2markdown(content)
+    metadata["content"] = content
     return metadata
 
 
