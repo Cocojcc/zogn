@@ -1,6 +1,6 @@
 from flask import Flask, Response
 from zogn.parsers import parse_article, parse_sitemap, parse_category, parse_about, parse_index, SLUG_TO_PATH, parse_tag
-from zogn.builders import render_to_html
+from zogn.builders import render_to_html, build_rss
 from zogn import conf
 
 app = Flask(__name__,
@@ -61,5 +61,14 @@ def sitemap():
     return Response(xml, mimetype="application/xml")
 
 
+
+@app.route("/rss.xml")
+def rss():
+    articles = parse_sitemap()
+    fg = build_rss(articles)
+    xml = fg.rss_str()
+    return Response(xml, mimetype="application/xml")
+
+
 if __name__ == '__main__':
-    app.run(port=9999, debug=True)
+    app.run(port=9999, debug=True, host="0.0.0.0")

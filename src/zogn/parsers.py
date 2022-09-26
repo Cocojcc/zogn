@@ -92,18 +92,16 @@ def parse_sitemap():
     return articles
 
 
-def parse_category():
+def parse_category(articles):
     categories_dict = {}
-    articles = load_all_articles()
     for article in articles:
         category_name = article["category"]
         categories_dict.setdefault(category_name, []).append(article)
     return categories_dict
 
 
-def parse_tag():
+def parse_tag(articles):
     tags_dict = {}
-    articles = load_all_articles()
     for article in articles:
         tags = article["tags"]
         for tag_name in tags:
