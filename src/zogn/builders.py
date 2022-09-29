@@ -105,7 +105,7 @@ def build_rss(articles):
         fe.pubDate(datetime.datetime.combine(item['date'], datetime.datetime.min.time(), tzinfo=dateutil.tz.tzutc()))
         fe.content(item['body'])
         fe.link(href=f"{conf.SITE_SETTINGS.get('SITE_URL')}/post/{item['slug']}")
-    fg.rss_file(conf.HTML_OUTPUT_PATH.joinpath('rss.xml').as_posix())
+    fg.rss_file(conf.HTML_OUTPUT_PATH.joinpath('feed.xml').as_posix())
     return fg
 
 

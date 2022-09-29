@@ -1,5 +1,5 @@
 from flask import Flask, Response
-from zogn.parsers import parse_article, parse_sitemap, parse_category, parse_about, parse_index, SLUG_TO_PATH, parse_tag
+from zogn.parsers import parse_article, parse_sitemap, parse_category, parse_about, parse_index, SLUG_TO_PATH, parse_tag, load_all_articles
 from zogn.builders import render_to_html, build_rss
 from zogn import conf
 
@@ -24,14 +24,14 @@ def detail(slug):
 
 @app.route("/category/<name>.html")
 def category(name):
-    categories = parse_category()
+    categories = parse_category(load_all_articles())
     articles = categories.get(name) or []
     return render_to_html("post/category.html", articles=articles, category_name=name)
 
 
 @app.route("/tag/<name>.html")
 def tag(name):
-    tags = parse_tag()
+    tags = parse_tag(load_all_articles())
     articles = tags.get(name) or []
     return render_to_html("post/tag.html", articles=articles, tag_name=name)
 
@@ -49,7 +49,7 @@ def links():
 
 @app.route("/tags.html")
 def tags():
-    tags = parse_tag()
+    tags = parse_tag(load_all_articles())
     tags = [{"name": name, "count": len(articles)} for name, articles in tags.items()]
     return render_to_html("tags.html", tags=tags)
 
@@ -61,8 +61,7 @@ def sitemap():
     return Response(xml, mimetype="application/xml")
 
 
-
-@app.route("/rss.xml")
+@app.route("/feed.xml")
 def rss():
     articles = parse_sitemap()
     fg = build_rss(articles)
