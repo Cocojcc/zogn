@@ -1,4 +1,4 @@
-from zogn.builders import build_article, build_category, build_about, build_links, build_sitemap, writer, build_static, \
+from zogn.builders import build_article, build_category, build_about, build_sitemap, writer, build_static, \
     build_index, build_tags, build_all_tags, build_rss
 import click
 from datetime import date
@@ -46,7 +46,7 @@ def build():
     build_index(articles)
     build_rss(articles)
     build_static()
-    build_links()
+    # build_links()
     build_about()
 
 

@@ -61,10 +61,10 @@ def build_about():
     writer(save_path, html)
 
 
-def build_links():
-    html = render_to_html("links.html", links=conf.LINKS)
-    save_path = conf.HTML_OUTPUT_PATH.joinpath("links.html")
-    writer(save_path, html)
+# def build_links():
+#     html = render_to_html("links.html", links=conf.LINKS)
+#     save_path = conf.HTML_OUTPUT_PATH.joinpath("links.html")
+#     writer(save_path, html)
 
 
 def build_sitemap(articles):
