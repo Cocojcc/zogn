@@ -4,7 +4,7 @@ import yaml
 from markdown import Markdown
 from markdown.inlinepatterns import LinkInlineProcessor, IMAGE_LINK_RE
 
-from zogn.conf import CONTENT_PATH, POST_PATH
+from zogn.conf import CONTENT_PATH, POST_PATH, POST_FOLDER_NAME
 
 SLUG_TO_PATH = {}
 
@@ -21,14 +21,16 @@ class ImageInlineProcessor(LinkInlineProcessor):
         if not handled:
             return None, None, None
 
-        el = etree.Element("img")
+        # 让图片居中显示
+        p = etree.Element("div")
+        p.set("style", "text-align:center")
+        el = etree.SubElement(p, "img")
         el.set("src", src)
         if title is not None:
             el.set("title", title)
 
-        # TODO 当图片加载失败时，自定义处理方案
         el.set("data-src", src)
-        return el, m.start(0), index
+        return p, m.start(0), index
 
 
 class MyMarkdown(Markdown):
@@ -61,16 +63,33 @@ def parse_markdown(file):
     return metadata, content
 
 
+def refactor_metadata_tags_and_category(metadata):
+    # 计算文章的分类和标签链接
+    category = metadata.pop("category")
+    metadata["category"] = {"name": category, "url": f"/category/{category}.html"}
+    tags = metadata.pop("tags")
+    metadata["tags"] = [{"name": tag, "url": f"/tag/{tag}.html"} for tag in tags]
+
+    metadata["tdk_category"] = category
+    metadata["tdk_tags"] = category
+    return metadata
+
+
 def load_all_articles():
     articles = []
-    for p in POST_PATH.rglob("*.md"):
+    for p in POST_PATH.rglob("**/*.md"):
         with p.open("r", encoding="utf-8") as f:
             metadata, content = parse_markdown(f)
             if metadata["status"] == "draft":
                 continue
             metadata["body"] = content2markdown(content)
+            metadata["year"] = p.parts[-2]
+            metadata["url"] = f'/{POST_FOLDER_NAME}/{metadata["year"]}/{metadata["slug"]}.html'
+            metadata = refactor_metadata_tags_and_category(metadata)
+
             articles.append(metadata)
-            SLUG_TO_PATH[metadata["slug"]] = p.as_posix()
+            SLUG_TO_PATH[f"{metadata['year']}/{metadata['slug']}"] = p.as_posix()
+
     articles.sort(key=lambda x: x["date"], reverse=True)
     return articles
 
@@ -84,7 +103,7 @@ def parse_article(path):
         metadata, content = parse_markdown(f)
     metadata["body"] = content2markdown(content)
     metadata["content"] = content
-    return metadata
+    return refactor_metadata_tags_and_category(metadata)
 
 
 def parse_sitemap():
@@ -95,7 +114,7 @@ def parse_sitemap():
 def parse_category(articles):
     categories_dict = {}
     for article in articles:
-        category_name = article["category"]
+        category_name = article["category"]["name"]
         categories_dict.setdefault(category_name, []).append(article)
     return categories_dict
 
@@ -104,8 +123,8 @@ def parse_tag(articles):
     tags_dict = {}
     for article in articles:
         tags = article["tags"]
-        for tag_name in tags:
-            tags_dict.setdefault(tag_name, []).append(article)
+        for tag in tags:
+            tags_dict.setdefault(tag["name"], []).append(article)
     return tags_dict
 
 

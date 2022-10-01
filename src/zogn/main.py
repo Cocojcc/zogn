@@ -56,13 +56,14 @@ def build():
 def generate_markdown(filename):
     tmp_str_list = []
     title = exact_filename(filename)
+    public_date = date.today()
     data = {"title": title, "slug": slugify(title), "category": "draft", "tags": [],
-            "date": date.today().strftime("%Y-%m-%d"), "status": "draft", "subtitle": ""}
+            "date": public_date.strftime("%Y-%m-%d"), "status": "draft", "subtitle": " "}
     for key, val in data.items():
         tmp_str_list.append(f"{key}: {val}")
     meta_str = "\n".join(tmp_str_list)
     template = conf.DEFAULT_POST_TEMPLATE.format(meta_str).strip()
-    filename = conf.CONTENT_PATH.joinpath(filename)
+    filename = conf.CONTENT_PATH.joinpath(conf.POST_FOLDER_NAME, public_date.strftime("%Y"), filename)
     if conf.POST_FOLDER_NAME in filename.parts:
         conf.POST_PATH.mkdir(parents=True, exist_ok=True)
     writer(filename, template)

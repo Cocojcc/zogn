@@ -18,8 +18,7 @@ SLUG_TO_PATH = {}
 def build_article(articles):
     for article in articles:
         html = render_to_html("post/detail.html", article=article)
-        pre_dirs = list(set(conf.CONTENT_PATH.parts) ^ set(conf.POST_PATH.parts))
-        path_prefix = conf.HTML_OUTPUT_PATH.joinpath("/".join(pre_dirs))
+        path_prefix = conf.HTML_OUTPUT_PATH.joinpath(conf.POST_FOLDER_NAME, article["year"])
         path_prefix.mkdir(parents=True, exist_ok=True)
         save_path = path_prefix.joinpath(article["slug"] + ".html")
         writer(save_path, html)
@@ -86,6 +85,63 @@ def build_index(articles):
     save_path = conf.HTML_OUTPUT_PATH.joinpath("index.html")
     writer(save_path, html)
 
+    # pagination_num = 10
+    #
+    # paginator = Pagination(articles, pagination_num)
+    # page_count = paginator.page_count
+    #
+    # for i in range(1, page_count + 1):
+    #     html = render_to_html("index.html", articles=paginator.paginate(i), page=paginator)
+    #     if i == 1:
+    #         save_path = conf.HTML_OUTPUT_PATH.joinpath("index.html")
+    #     else:
+    #         save_path = conf.HTML_OUTPUT_PATH.joinpath(f"index-{i}.html")
+    #     writer(save_path, html)
+
+
+class Pagination:
+
+    def __init__(self, articles: list, limit: int, current_page=1):
+        self.articles = articles
+        self.limit = limit
+
+        page_count, tmp = divmod(len(articles), limit)
+        if tmp: page_count += 1
+
+        self.page_count = page_count
+        self.current_page = current_page
+
+    @property
+    def start(self):
+        return (self.current_page - 1) * self.limit
+
+    @property
+    def end(self):
+        return self.current_page * self.limit
+
+    def paginate(self, page):
+        self.current_page = page
+        return self.articles[self.start:self.end]
+
+    @property
+    def has_prev(self):
+        return self.current_page > 1
+
+    @property
+    def has_next(self):
+        return self.current_page < self.page_count
+
+    @property
+    def prev_page_path(self):
+        if self.current_page == 2:
+            return "/"
+        else:
+            return f"/page-{self.current_page - 1}.html"
+
+    @property
+    def next_page_path(self):
+        return f"/page-{self.current_page + 1}.html" if self.has_next else None
+
 
 def build_rss(articles):
     """
@@ -93,7 +149,7 @@ def build_rss(articles):
     """
     fg = FeedGenerator()
     fg.id('https://2dosth.com')
-    fg.title('2Dosth')
+    fg.title('2dosth')
     fg.author({'name': 'JChen', 'email': 'intbleem@gmail.com'})
     fg.link(href='https://2dosth.com', rel='alternate')
     fg.description(conf.SITE_SETTINGS.get('SITE_DESCRIPTION'))
@@ -104,7 +160,7 @@ def build_rss(articles):
         fe.title(item['title'])
         fe.pubDate(datetime.datetime.combine(item['date'], datetime.datetime.min.time(), tzinfo=dateutil.tz.tzutc()))
         fe.content(item['body'])
-        fe.link(href=f"{conf.SITE_SETTINGS.get('SITE_URL')}/post/{item['slug']}")
+        fe.link(href=f"{conf.SITE_SETTINGS.get('SITE_URL')}{item['url']}")
     fg.rss_file(conf.HTML_OUTPUT_PATH.joinpath('feed.xml').as_posix())
     return fg
 

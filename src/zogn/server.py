@@ -1,6 +1,6 @@
 from flask import Flask, Response
 from zogn.parsers import parse_article, parse_sitemap, parse_category, parse_about, parse_index, SLUG_TO_PATH, parse_tag, load_all_articles
-from zogn.builders import render_to_html, build_rss
+from zogn.builders import render_to_html, build_rss, Pagination
 from zogn import conf
 
 app = Flask(__name__,
@@ -12,12 +12,21 @@ app = Flask(__name__,
 @app.route("/")
 def index():
     articles = parse_index()
+    # paginator = Pagination(articles, 10)
+    # return render_to_html("index.html", articles=paginator.paginate(1), page=paginator)
     return render_to_html("index.html", articles=articles)
 
 
-@app.route("/post/<slug>.html")
-def detail(slug):
-    article_path = SLUG_TO_PATH[slug]
+# @app.route("/page-<int:page>.html")
+# def page(page):
+#     articles = parse_index()
+#     paginator = Pagination(articles, 10)
+#     return render_to_html("index.html", articles=paginator.paginate(page), page=paginator)
+
+
+@app.route("/post/<year>/<slug>.html")
+def detail(year, slug):
+    article_path = SLUG_TO_PATH[f'{year}/{slug}']
     metadata = parse_article(article_path)
     return render_to_html("post/detail.html", article=metadata)
 
