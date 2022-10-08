@@ -61,10 +61,10 @@ def build_about():
     writer(save_path, html)
 
 
-# def build_links():
-#     html = render_to_html("links.html", links=conf.LINKS)
-#     save_path = conf.HTML_OUTPUT_PATH.joinpath("links.html")
-#     writer(save_path, html)
+def build_links():
+    html = render_to_html("links.html")
+    save_path = conf.HTML_OUTPUT_PATH.joinpath("links.html")
+    writer(save_path, html)
 
 
 def build_sitemap(articles):
@@ -148,10 +148,10 @@ def build_rss(articles):
     生成 RSS Feed
     """
     fg = FeedGenerator()
-    fg.id('https://2dosth.com')
-    fg.title('2dosth')
-    fg.author({'name': 'JChen', 'email': 'intbleem@gmail.com'})
-    fg.link(href='https://2dosth.com', rel='alternate')
+    fg.id(conf.SITE_SETTINGS.get("SITE_URL"))
+    fg.title(conf.SITE_SETTINGS.get("SITE_NAME"))
+    fg.author({'name': 'ZoroNox', 'email': 'intbleem@gmail.com'})
+    fg.link(href=conf.SITE_SETTINGS.get("SITE_URL"), rel='alternate')
     fg.description(conf.SITE_SETTINGS.get('SITE_DESCRIPTION'))
     articles.sort(key=lambda x: x["date"], reverse=False)
     for index, item in enumerate(articles):

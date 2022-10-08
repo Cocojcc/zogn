@@ -53,7 +53,7 @@ def about():
 
 @app.route("/links.html")
 def links():
-    return render_to_html("links.html", links=conf.LINKS)
+    return render_to_html("links.html")
 
 
 @app.route("/tags.html")
