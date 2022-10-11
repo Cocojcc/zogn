@@ -71,7 +71,7 @@ def refactor_metadata_tags_and_category(metadata):
     metadata["tags"] = [{"name": tag, "url": f"/tag/{tag}.html"} for tag in tags]
 
     metadata["tdk_category"] = category
-    metadata["tdk_tags"] = category
+    metadata["tdk_tags"] = tags
     return metadata
 
 
