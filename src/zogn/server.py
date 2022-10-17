@@ -2,6 +2,7 @@ from flask import Flask, Response
 from zogn.parsers import parse_article, parse_sitemap, parse_category, parse_about, parse_index, SLUG_TO_PATH, parse_tag, load_all_articles
 from zogn.builders import render_to_html, build_rss, Pagination
 from zogn import conf
+import datetime
 
 app = Flask(__name__,
             template_folder=conf.TEMPLATES_FOLDER,
@@ -66,7 +67,14 @@ def tags():
 @app.route("/sitemap.xml")
 def sitemap():
     articles = parse_sitemap()
-    xml = render_to_html("sitemap.xml", articles=articles)
+    article_tags = []
+    [article_tags.append(tag) for article in articles for tag in article["tags"] if tag not in article_tags]
+
+    categories = []
+    [categories.append(article["category"]) for article in articles if article["category"] not in categories]
+    today = datetime.date.today()
+    xml = render_to_html("sitemap.xml", articles=articles, tags=article_tags, categories=categories,
+                         today=today)
     return Response(xml, mimetype="application/xml")
 
 

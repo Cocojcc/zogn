@@ -68,7 +68,14 @@ def build_links():
 
 
 def build_sitemap(articles):
-    html = render_to_html("sitemap.xml", articles=articles)
+    article_tags = []
+    [article_tags.append(tag) for article in articles for tag in article["tags"] if tag not in article_tags]
+    categories = []
+    [categories.append(article["category"]) for article in articles if article["category"] not in categories]
+    today = datetime.date.today()
+
+    html = render_to_html("sitemap.xml", articles=articles, tags=article_tags, categories=categories,
+                          today=today)
     save_path = conf.HTML_OUTPUT_PATH.joinpath("sitemap.xml")
     writer(save_path, html)
 

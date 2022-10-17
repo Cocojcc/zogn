@@ -83,10 +83,10 @@ def load_all_articles():
             if metadata["status"] == "draft":
                 continue
             metadata["body"] = content2markdown(content)
+            metadata["content"] = content
             metadata["year"] = p.parts[-2]
             metadata["url"] = f'/{POST_FOLDER_NAME}/{metadata["year"]}/{metadata["slug"]}.html'
             metadata = refactor_metadata_tags_and_category(metadata)
-
             articles.append(metadata)
             SLUG_TO_PATH[f"{metadata['year']}/{metadata['slug']}"] = p.as_posix()
 
