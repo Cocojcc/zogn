@@ -1,4 +1,4 @@
-from flask import Flask, Response
+from flask import Flask, Response, send_from_directory
 from zogn.parsers import parse_article, parse_sitemap, parse_category, parse_about, parse_index, SLUG_TO_PATH, parse_tag, load_all_articles
 from zogn.builders import render_to_html, build_rss, Pagination
 from zogn import conf
@@ -6,8 +6,10 @@ import datetime
 
 app = Flask(__name__,
             template_folder=conf.TEMPLATES_FOLDER,
-            static_folder=conf.STATIC_FOLDER
+            static_folder=conf.STATIC_FOLDER,
             )
+
+app.config["img_folder_path"] = conf.IMAGE_PATH
 
 
 @app.route("/")
@@ -16,6 +18,12 @@ def index():
     # paginator = Pagination(articles, 10)
     # return render_to_html("index.html", articles=paginator.paginate(1), page=paginator)
     return render_to_html("index.html", articles=articles)
+
+
+@app.route("/img/<path:path>")
+def img(path):
+    return send_from_directory(directory=conf.IMAGE_PATH, filename=path)
+
 
 
 # @app.route("/page-<int:page>.html")

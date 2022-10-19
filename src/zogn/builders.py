@@ -86,6 +86,12 @@ def build_static():
         shutil.rmtree(static)
     shutil.copytree(conf.STATIC_FOLDER, static)
 
+    img = conf.HTML_OUTPUT_PATH.joinpath("img")
+    if img.exists():
+        shutil.rmtree(img)
+    shutil.copytree(conf.IMAGE_PATH, img)
+
+
 
 def build_index(articles):
     html = render_to_html("index.html", articles=articles)

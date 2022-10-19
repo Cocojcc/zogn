@@ -1,3 +1,5 @@
+import os
+
 from zogn.builders import build_article, build_category, build_about, build_sitemap, writer, build_static, \
     build_index, build_tags, build_all_tags, build_rss, build_links
 import click
@@ -36,7 +38,19 @@ def cli():
 @cli.command("build", short_help="构建项目")
 @root_command
 def build():
-    shutil.rmtree(conf.HTML_OUTPUT_PATH)
+    if os.path.exists(conf.HTML_OUTPUT_PATH):
+        CNAME_PATH = conf.HTML_OUTPUT_PATH / "CNAME"
+        if not os.path.exists(CNAME_PATH):
+            shutil.rmtree(conf.HTML_OUTPUT_PATH)
+        else:
+            # 复制CNAME的内容并重新写入
+            with CNAME_PATH.open("r") as f:
+                CNAME = f.read()
+            shutil.rmtree(conf.HTML_OUTPUT_PATH)
+            conf.HTML_OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
+            with CNAME_PATH.open("w") as f:
+                f.write(CNAME)
+
     articles = load_all_articles()
     build_article(articles)
     build_sitemap(articles)
@@ -58,7 +72,7 @@ def generate_markdown(filename):
     title = exact_filename(filename)
     public_date = date.today()
     data = {"title": title, "slug": slugify(title), "category": "draft", "tags": [],
-            "date": public_date.strftime("%Y-%m-%d"), "status": "draft", "subtitle": " "}
+            "date": public_date.strftime("%Y-%m-%d"), "status": "draft", "subtitle": ""}
     for key, val in data.items():
         tmp_str_list.append(f"{key}: {val}")
     meta_str = "\n".join(tmp_str_list)

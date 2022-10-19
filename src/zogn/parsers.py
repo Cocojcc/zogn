@@ -1,6 +1,6 @@
 from xml.etree import ElementTree as etree
 
-import yaml
+import yaml, re
 from markdown import Markdown
 from markdown.inlinepatterns import LinkInlineProcessor, IMAGE_LINK_RE
 
@@ -25,6 +25,18 @@ class ImageInlineProcessor(LinkInlineProcessor):
         p = etree.Element("div")
         p.set("style", "text-align:center")
         el = etree.SubElement(p, "img")
+
+        def sub_relative_identifier(a):
+            start = 0
+            end = 0
+            pattern = re.compile("(\.\.)+?")
+            for i in pattern.finditer(a):
+                end = i.end()
+            if start + end:
+                return a[end:]
+            return a
+
+        src = sub_relative_identifier(src)
         el.set("src", src)
         if title is not None:
             el.set("title", title)
