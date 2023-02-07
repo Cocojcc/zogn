@@ -15,9 +15,9 @@ app.config["img_folder_path"] = conf.IMAGE_PATH
 @app.route("/")
 def index():
     articles = parse_index()
-    # paginator = Pagination(articles, 10)
-    # return render_to_html("index.html", articles=paginator.paginate(1), page=paginator)
-    return render_to_html("index.html", articles=articles)
+    paginator = Pagination(articles, 10, page_tag="index")
+    return render_to_html("index.html", articles=paginator.paginate(1), page=paginator)
+    # return render_to_html("index.html", articles=articles)
 
 
 @app.route("/img/<path:path>")
@@ -25,12 +25,11 @@ def img(path):
     return send_from_directory(directory=conf.IMAGE_PATH, filename=path)
 
 
-
-# @app.route("/page-<int:page>.html")
-# def page(page):
-#     articles = parse_index()
-#     paginator = Pagination(articles, 10)
-#     return render_to_html("index.html", articles=paginator.paginate(page), page=paginator)
+@app.route("/index-page-<int:page>.html")
+def page(page):
+    articles = parse_index()
+    paginator = Pagination(articles, 10, page_tag="index")
+    return render_to_html("index.html", articles=paginator.paginate(page), page=paginator)
 
 
 @app.route("/post/<year>/<slug>.html")

@@ -92,29 +92,28 @@ def build_static():
     shutil.copytree(conf.IMAGE_PATH, img)
 
 
-
 def build_index(articles):
-    html = render_to_html("index.html", articles=articles)
-    save_path = conf.HTML_OUTPUT_PATH.joinpath("index.html")
-    writer(save_path, html)
+    # html = render_to_html("index.html", articles=articles)
+    # save_path = conf.HTML_OUTPUT_PATH.joinpath("index.html")
+    # writer(save_path, html)
 
-    # pagination_num = 10
-    #
-    # paginator = Pagination(articles, pagination_num)
-    # page_count = paginator.page_count
-    #
-    # for i in range(1, page_count + 1):
-    #     html = render_to_html("index.html", articles=paginator.paginate(i), page=paginator)
-    #     if i == 1:
-    #         save_path = conf.HTML_OUTPUT_PATH.joinpath("index.html")
-    #     else:
-    #         save_path = conf.HTML_OUTPUT_PATH.joinpath(f"index-{i}.html")
-    #     writer(save_path, html)
+    pagination_num = conf.PAGINATION_NUM
+
+    paginator = Pagination(articles, pagination_num, page_tag="index")
+    page_count = paginator.page_count
+
+    for i in range(1, page_count + 1):
+        html = render_to_html("index.html", articles=paginator.paginate(i), page=paginator)
+        if i == 1:
+            save_path = conf.HTML_OUTPUT_PATH.joinpath("index.html")
+        else:
+            save_path = conf.HTML_OUTPUT_PATH.joinpath(f"index-page-{i}.html")
+        writer(save_path, html)
 
 
 class Pagination:
 
-    def __init__(self, articles: list, limit: int, current_page=1):
+    def __init__(self, articles: list, limit: int, current_page=1, page_tag=None):
         self.articles = articles
         self.limit = limit
 
@@ -123,6 +122,7 @@ class Pagination:
 
         self.page_count = page_count
         self.current_page = current_page
+        self.page_tag = page_tag
 
     @property
     def start(self):
@@ -148,12 +148,14 @@ class Pagination:
     def prev_page_path(self):
         if self.current_page == 2:
             return "/"
+        elif self.current_page == 1:
+            return None
         else:
-            return f"/page-{self.current_page - 1}.html"
+            return f"/{self.page_tag}-page-{self.current_page - 1}.html"
 
     @property
     def next_page_path(self):
-        return f"/page-{self.current_page + 1}.html" if self.has_next else None
+        return f"/{self.page_tag}-page-{self.current_page + 1}.html" if self.has_next else None
 
 
 def build_rss(articles):
