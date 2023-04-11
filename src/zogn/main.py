@@ -77,9 +77,10 @@ def generate_markdown(filename):
         tmp_str_list.append(f"{key}: {val}")
     meta_str = "\n".join(tmp_str_list)
     template = conf.DEFAULT_POST_TEMPLATE.format(meta_str).strip()
-    filename = conf.CONTENT_PATH.joinpath(conf.POST_FOLDER_NAME, public_date.strftime("%Y"), filename)
-    if conf.POST_FOLDER_NAME in filename.parts:
-        conf.POST_PATH.mkdir(parents=True, exist_ok=True)
+    parent_folder = conf.CONTENT_PATH.joinpath(conf.POST_FOLDER_NAME, public_date.strftime("%Y"))
+    parent_folder.mkdir(parents=True, exist_ok=True)
+
+    filename = parent_folder.joinpath(filename)
     writer(filename, template)
 
 

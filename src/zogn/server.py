@@ -1,5 +1,6 @@
 from flask import Flask, Response, send_from_directory
-from zogn.parsers import parse_article, parse_sitemap, parse_category, parse_about, parse_index, SLUG_TO_PATH, parse_tag, load_all_articles
+from zogn.parsers import parse_article, parse_sitemap, parse_category, parse_about, parse_index, SLUG_TO_PATH, \
+    parse_tag, load_all_articles
 from zogn.builders import render_to_html, build_rss, Pagination
 from zogn import conf
 import datetime

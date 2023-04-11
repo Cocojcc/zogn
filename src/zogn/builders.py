@@ -7,8 +7,7 @@ from jinja2 import Environment, FileSystemLoader
 
 from zogn import conf
 
-from zogn.parsers import parse_category, parse_sitemap, load_all_articles, parse_index, parse_tag, MyMarkdown, \
-    content2markdown
+from zogn.parsers import parse_category, parse_tag, MyMarkdown, content2markdown
 
 env = Environment(loader=FileSystemLoader(conf.THEME_PATH / conf.TEMPLATES_FOLDER))
 
