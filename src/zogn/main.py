@@ -1,12 +1,12 @@
 import os
 
 from zogn.builders import build_article, build_category, build_about, build_sitemap, writer, build_static, \
-    build_index, build_tags, build_all_tags, build_rss, build_links
+    build_index, build_tags, build_all_tags, build_rss, build_links, build_archives
 import click
 from datetime import date
 from slugify import slugify
 
-from zogn.parsers import load_all_articles
+from zogn.parsers import load_all_articles, check_repeat_slug
 from zogn.server import app
 from zogn import conf
 import functools
@@ -51,6 +51,8 @@ def build():
             with CNAME_PATH.open("w") as f:
                 f.write(CNAME)
 
+    check_repeat_slug()
+
     articles = load_all_articles()
     build_article(articles)
     build_sitemap(articles)
@@ -59,6 +61,7 @@ def build():
     build_all_tags(articles)
     build_index(articles)
     build_rss(articles)
+    build_archives(articles)
     build_static()
     build_links()
     build_about()
@@ -77,7 +80,7 @@ def generate_markdown(filename):
         tmp_str_list.append(f"{key}: {val}")
     meta_str = "\n".join(tmp_str_list)
     template = conf.DEFAULT_POST_TEMPLATE.format(meta_str).strip()
-    parent_folder = conf.CONTENT_PATH.joinpath(conf.POST_FOLDER_NAME, public_date.strftime("%Y"))
+    parent_folder = conf.CONTENT_PATH.joinpath(conf.POST_SOURCE_FOLDER_NAME, public_date.strftime("%Y"))
     parent_folder.mkdir(parents=True, exist_ok=True)
 
     filename = parent_folder.joinpath(filename)
@@ -100,6 +103,7 @@ def init_command(name):
 @cli.command("server", short_help="本地预览")
 @root_command
 def server_command():
+    check_repeat_slug()
     app.run(port=9999, debug=True)
 
 

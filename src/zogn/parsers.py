@@ -1,10 +1,13 @@
 from xml.etree import ElementTree as etree
 
 import yaml, re
+import mistune
+from mistune import HTMLRenderer, escape_html, escape
+
 from markdown import Markdown
 from markdown.inlinepatterns import LinkInlineProcessor, IMAGE_LINK_RE
 
-from zogn.conf import CONTENT_PATH, POST_PATH, POST_FOLDER_NAME
+from zogn.conf import CONTENT_PATH, POST_PATH, POST_SOURCE_FOLDER_NAME, POST_HTML_FOLDER_NAME
 
 SLUG_TO_PATH = {}
 
@@ -53,12 +56,39 @@ class MyMarkdown(Markdown):
         return self
 
 
+class MyRenderer(HTMLRenderer):
+    def paragraph(self, text):
+        if "<br>" in text:
+            return '<p>' + text + '</p><br>\n'
+        return '<p>' + text + '</p>\n'
+
+
 def content2markdown(content):
-    md = MyMarkdown(extensions=[
-        'markdown.extensions.extra',
-        'markdown.extensions.codehilite',
-    ])
-    content = md.convert(content)
+
+    # 使用正则表达式匹配四个连续的换行符，并在替换时将其中的三个替换为 \n<br>\n
+    pattern = re.compile(r'(\n{4})')
+
+    # 定义替换函数，使用捕获组中的内容进行替换
+    def replace_newlines(match):
+        return '\n<br>\n' + match.group(1)[:1]
+
+    # 使用 re.sub() 函数进行替换，传入替换函数和输入字符串
+    content = re.sub(pattern, replace_newlines, content)
+
+    # md = MyMarkdown(extensions=[
+    #     'markdown.extensions.extra',
+    #     'markdown.extensions.codehilite',
+    # ])
+    # content = md.convert(content)
+
+    #
+    # # content = mistune.html(content)
+    #
+    # markdown = mistune.create_markdown(escape=False, hard_wrap=True)
+    # use this renderer instance
+
+    markdown = mistune.Markdown(renderer=MyRenderer(escape=False))
+    content = markdown(content)
     return content
 
 
@@ -78,9 +108,9 @@ def parse_markdown(file):
 def refactor_metadata_tags_and_category(metadata):
     # 计算文章的分类和标签链接
     category = metadata.pop("category")
-    metadata["category"] = {"name": category, "url": f"/category/{category}.html"}
+    metadata["category"] = {"name": category, "url": f"/category/{category}"}
     tags = metadata.pop("tags")
-    metadata["tags"] = [{"name": tag, "url": f"/tag/{tag}.html"} for tag in tags]
+    metadata["tags"] = [{"name": tag, "url": f"/tag/{tag}"} for tag in tags]
 
     metadata["tdk_category"] = category
     metadata["tdk_tags"] = tags
@@ -96,14 +126,26 @@ def load_all_articles():
                 continue
             metadata["body"] = content2markdown(content)
             metadata["content"] = content
-            metadata["year"] = p.parts[-2]
-            metadata["url"] = f'/{POST_FOLDER_NAME}/{metadata["year"]}/{metadata["slug"]}.html'
+            # metadata["year"] = p.parts[-2]
+            # metadata["url"] = f'/{POST_FOLDER_NAME}/{metadata["year"]}/{metadata["slug"]}.html'
+            metadata["url"] = f'/{POST_HTML_FOLDER_NAME}/{metadata["slug"]}' if POST_HTML_FOLDER_NAME else f'/{metadata["slug"]}'
             metadata = refactor_metadata_tags_and_category(metadata)
             articles.append(metadata)
-            SLUG_TO_PATH[f"{metadata['year']}/{metadata['slug']}"] = p.as_posix()
+
+            SLUG_TO_PATH[f"{metadata['slug']}"] = p.as_posix()
 
     articles.sort(key=lambda x: x["date"], reverse=True)
     return articles
+
+
+def check_repeat_slug():
+    for p in POST_PATH.rglob("**/*.md"):
+        with p.open("r", encoding="utf-8") as f:
+            metadata, content = parse_markdown(f)
+            if metadata['slug'] in SLUG_TO_PATH:
+                raise RuntimeError("存在重复的slug！")
+
+            SLUG_TO_PATH[f"{metadata['slug']}"] = p.as_posix()
 
 
 def parse_index():

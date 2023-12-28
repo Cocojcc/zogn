@@ -3,6 +3,7 @@ from zogn.parsers import parse_article, parse_sitemap, parse_category, parse_abo
     parse_tag, load_all_articles
 from zogn.builders import render_to_html, build_rss, Pagination
 from zogn import conf
+
 import datetime
 
 app = Flask(__name__,
@@ -21,51 +22,59 @@ def index():
     # return render_to_html("index.html", articles=articles)
 
 
+@app.route("/<slug>")
+def detail(slug):
+    if slug == "favicon.ico":
+        return "", 404
+    article_path = SLUG_TO_PATH[f'{slug}']
+    metadata = parse_article(article_path)
+    return render_to_html("post/detail.html", article=metadata)
+
+
 @app.route("/img/<path:path>")
 def img(path):
-    return send_from_directory(directory=conf.IMAGE_PATH, filename=path)
+    return send_from_directory(conf.IMAGE_PATH, path)
 
 
-@app.route("/index-page-<int:page>.html")
+@app.route("/index-page-<int:page>")
 def page(page):
     articles = parse_index()
     paginator = Pagination(articles, 10, page_tag="index")
     return render_to_html("index.html", articles=paginator.paginate(page), page=paginator)
 
 
-@app.route("/post/<year>/<slug>.html")
-def detail(year, slug):
-    article_path = SLUG_TO_PATH[f'{year}/{slug}']
-    metadata = parse_article(article_path)
-    return render_to_html("post/detail.html", article=metadata)
-
-
-@app.route("/category/<name>.html")
+@app.route("/category/<name>")
 def category(name):
     categories = parse_category(load_all_articles())
     articles = categories.get(name) or []
     return render_to_html("post/category.html", articles=articles, category_name=name)
 
 
-@app.route("/tag/<name>.html")
+@app.route("/tag/<name>")
 def tag(name):
     tags = parse_tag(load_all_articles())
     articles = tags.get(name) or []
     return render_to_html("post/tag.html", articles=articles, tag_name=name)
 
 
-@app.route("/about.html")
+@app.route("/about")
 def about():
     body = parse_about()
     return render_to_html("about.html", body=body)
 
 
-@app.route("/links.html")
+@app.route("/archives")
+def archives():
+    articles = parse_index()
+    return render_to_html("archives.html", articles=articles)
+
+
+@app.route("/links")
 def links():
     return render_to_html("links.html")
 
 
-@app.route("/tags.html")
+@app.route("/tags")
 def tags():
     tags = parse_tag(load_all_articles())
     tags = [{"name": name, "count": len(articles)} for name, articles in tags.items()]

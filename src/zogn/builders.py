@@ -1,5 +1,7 @@
 import datetime
 import shutil
+import os
+from csscompressor import compress
 
 import dateutil.tz
 from feedgen.feed import FeedGenerator
@@ -17,7 +19,7 @@ SLUG_TO_PATH = {}
 def build_article(articles):
     for article in articles:
         html = render_to_html("post/detail.html", article=article)
-        path_prefix = conf.HTML_OUTPUT_PATH.joinpath(conf.POST_FOLDER_NAME, article["year"])
+        path_prefix = conf.HTML_OUTPUT_PATH.joinpath(conf.POST_HTML_FOLDER_NAME)
         path_prefix.mkdir(parents=True, exist_ok=True)
         save_path = path_prefix.joinpath(article["slug"] + ".html")
         writer(save_path, html)
@@ -80,15 +82,47 @@ def build_sitemap(articles):
 
 
 def build_static():
-    static = conf.HTML_OUTPUT_PATH.joinpath("static")
-    if static.exists():
-        shutil.rmtree(static)
-    shutil.copytree(conf.STATIC_FOLDER, static)
+    # static = conf.HTML_OUTPUT_PATH.joinpath("static")
+    # if static.exists():
+    #     shutil.rmtree(static)
+    # shutil.copytree(conf.STATIC_FOLDER, static)
 
+    # CSS file
+    output_static = conf.HTML_OUTPUT_PATH.joinpath("static", "css")
+    origin_static = conf.STATIC_FOLDER.joinpath("css")
+
+    # 遍历源文件夹中的所有文件和子文件夹
+    for root, dirs, files in os.walk(origin_static):
+        # 构建目标文件夹中的相对路径
+        destination_path = os.path.join(output_static, os.path.relpath(root, origin_static))
+
+        # 确保目标文件夹中的子文件夹存在，如果不存在则创建
+        if not os.path.exists(destination_path):
+            os.makedirs(destination_path)
+
+        # 复制文件到目标文件夹
+        for file in files:
+            source_file_path = os.path.join(root, file)
+            destination_file_path = os.path.join(destination_path, file)
+            css = compress(open(source_file_path, "r", encoding="utf8").read())
+            writer(destination_file_path, css)
+
+    # JS file
+    js_static = conf.HTML_OUTPUT_PATH.joinpath("static", "js")
+    if js_static.exists():
+        shutil.rmtree(js_static)
+    shutil.copytree(conf.STATIC_FOLDER.joinpath("js"), js_static)
+
+    # image file
     img = conf.HTML_OUTPUT_PATH.joinpath("img")
     if img.exists():
         shutil.rmtree(img)
     shutil.copytree(conf.IMAGE_PATH, img)
+
+    # ico file
+    ico_file = conf.STATIC_FOLDER.joinpath("favicon.ico")
+    if ico_file.exists():
+        shutil.copy2(ico_file, conf.HTML_OUTPUT_PATH)
 
 
 def build_index(articles):
@@ -108,6 +142,12 @@ def build_index(articles):
         else:
             save_path = conf.HTML_OUTPUT_PATH.joinpath(f"index-page-{i}.html")
         writer(save_path, html)
+
+
+def build_archives(articles):
+    html = render_to_html("archives.html", articles=articles)
+    save_path = conf.HTML_OUTPUT_PATH.joinpath("archives.html")
+    writer(save_path, html)
 
 
 class Pagination:
@@ -150,11 +190,11 @@ class Pagination:
         elif self.current_page == 1:
             return None
         else:
-            return f"/{self.page_tag}-page-{self.current_page - 1}.html"
+            return f"/{self.page_tag}-page-{self.current_page - 1}"
 
     @property
     def next_page_path(self):
-        return f"/{self.page_tag}-page-{self.current_page + 1}.html" if self.has_next else None
+        return f"/{self.page_tag}-page-{self.current_page + 1}" if self.has_next else None
 
 
 def build_rss(articles):
@@ -164,7 +204,6 @@ def build_rss(articles):
     fg = FeedGenerator()
     fg.id(conf.SITE_SETTINGS.get("SITE_URL"))
     fg.title(conf.SITE_SETTINGS.get("SITE_NAME"))
-    fg.author({'name': 'ZoroNox', 'email': 'intbleem@gmail.com'})
     fg.link(href=conf.SITE_SETTINGS.get("SITE_URL"), rel='alternate')
     fg.description(conf.SITE_SETTINGS.get('SITE_DESCRIPTION'))
     articles.sort(key=lambda x: x["date"], reverse=False)
