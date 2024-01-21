@@ -2,6 +2,7 @@ import datetime
 import shutil
 import os
 from csscompressor import compress
+from copy import deepcopy
 
 import dateutil.tz
 from feedgen.feed import FeedGenerator
@@ -9,11 +10,9 @@ from jinja2 import Environment, FileSystemLoader
 
 from zogn import conf
 
-from zogn.parsers import parse_category, parse_tag, MyMarkdown, content2markdown
+from zogn.parsers import parse_category, parse_tag, MyMarkdown, content2markdown, POST_DATA
 
 env = Environment(loader=FileSystemLoader(conf.THEME_PATH / conf.TEMPLATES_FOLDER))
-
-SLUG_TO_PATH = {}
 
 
 def build_article(articles):
@@ -201,6 +200,8 @@ def build_rss(articles):
     """
     生成 RSS Feed
     """
+    articles = deepcopy(articles)
+
     fg = FeedGenerator()
     fg.id(conf.SITE_SETTINGS.get("SITE_URL"))
     fg.title(conf.SITE_SETTINGS.get("SITE_NAME"))
@@ -220,7 +221,11 @@ def build_rss(articles):
 
 def render_to_html(template, **kwargs):
     template = env.get_template(template)
-    html = template.render(**conf.SITE_SETTINGS, **kwargs)
+
+    post_data = deepcopy(POST_DATA)
+    post_data.update(**kwargs)
+
+    html = template.render(**conf.SITE_SETTINGS, **post_data)
     return html
 
 

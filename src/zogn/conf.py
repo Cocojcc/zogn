@@ -52,6 +52,7 @@ except:
 STATIC_FOLDER = THEME_PATH.joinpath(settings.get("STATIC_FOLDER", ""))
 TEMPLATES_FOLDER = THEME_PATH.joinpath(settings.get("TEMPLATES_FOLDER", ""))
 PAGINATION_NUM = settings.get("PAGINATION_NUM")
+
 SITE_SETTINGS = {
     "SITE_NAME": settings.get("SITE_NAME"),
     "SITE_LOGO_NAME": settings.get("SITE_LOGO_NAME"),
@@ -66,3 +67,6 @@ SITE_SETTINGS = {
     "TEMPLATES_FOLDER": TEMPLATES_FOLDER,
 
 }
+
+SLUG_TO_PATH = {}
+POST_DATA = {}

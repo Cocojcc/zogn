@@ -1,4 +1,5 @@
 import os
+from flask import g
 
 from zogn.builders import build_article, build_category, build_about, build_sitemap, writer, build_static, \
     build_index, build_tags, build_all_tags, build_rss, build_links, build_archives
@@ -53,7 +54,8 @@ def build():
 
     check_repeat_slug()
 
-    articles = load_all_articles()
+    articles = conf.POST_DATA["articles"]
+
     build_article(articles)
     build_sitemap(articles)
     build_category(articles)
