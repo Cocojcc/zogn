@@ -3,6 +3,7 @@ import shutil
 import os
 from csscompressor import compress
 from copy import deepcopy
+from pathlib import Path
 
 import dateutil.tz
 from feedgen.feed import FeedGenerator
@@ -13,6 +14,25 @@ from zogn import conf
 from zogn.parsers import parse_category, parse_tag, MyMarkdown, content2markdown, POST_DATA
 
 env = Environment(loader=FileSystemLoader(conf.THEME_PATH / conf.TEMPLATES_FOLDER))
+
+
+def copy_img_files(source_folder, destination_folder):
+    # 确保目标文件夹存在
+    if not os.path.exists(destination_folder):
+        os.makedirs(destination_folder)
+
+    # 遍历源文件夹中的文件
+    for file in source_folder.glob("**/*.webp"):
+        print(file.as_posix())
+
+    # for filename in os.listdir(source_folder):
+    #     print(filename)
+    #     source_path = os.path.join(source_folder, filename)
+    #
+    #     # 检查文件是否是.webp文件
+    #     if filename.lower().endswith('.webp') and os.path.isfile(source_path):
+    #         destination_path = os.path.join(destination_folder, filename)
+    #         shutil.copy2(source_path, destination_path)
 
 
 def build_article(articles):
@@ -116,7 +136,16 @@ def build_static():
     img = conf.HTML_OUTPUT_PATH.joinpath("img")
     if img.exists():
         shutil.rmtree(img)
-    shutil.copytree(conf.IMAGE_PATH, img)
+
+    for file in conf.IMAGE_PATH.glob("**/*.webp"):
+        output_index = file.parts.index("img")
+        relative_path = Path(*file.parts[output_index:])
+        target_path = conf.HTML_OUTPUT_PATH.joinpath(relative_path)
+        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+        shutil.copy2(file, target_path)
+
+    # shutil.copytree(conf.IMAGE_PATH, img)
+    # copy_img_files(conf.IMAGE_PATH, img)
 
     # ico file
     ico_file = conf.STATIC_FOLDER.joinpath("favicon.ico")
@@ -210,7 +239,7 @@ def build_rss(articles):
     articles.sort(key=lambda x: x["date"], reverse=False)
     for index, item in enumerate(articles):
         fe = fg.add_entry()
-        fe.id(item['slug'])
+        fe.id(str(item['slug']))
         fe.title(item['title'])
         fe.pubDate(datetime.datetime.combine(item['date'], datetime.datetime.min.time(), tzinfo=dateutil.tz.tzutc()))
         fe.content(item['body'])

@@ -70,8 +70,8 @@ def about():
 
 @app.route("/archives")
 def archives():
-    articles = POST_DATA["articles"]
-    return render_to_html("archives.html", articles=articles)
+    archives = POST_DATA["archives"]
+    return render_to_html("archives.html", archives=archives)
 
 
 @app.route("/links")

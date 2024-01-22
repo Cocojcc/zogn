@@ -1,8 +1,12 @@
 from xml.etree import ElementTree as etree
 
-import yaml, re
+import yaml, re, os
 import mistune
 from bs4 import BeautifulSoup
+
+from collections import OrderedDict
+from PIL import Image
+from urllib.parse import unquote, quote
 
 from mistune import HTMLRenderer, escape_html, escape
 
@@ -13,7 +17,7 @@ from markdown import Markdown
 from markdown.inlinepatterns import LinkInlineProcessor, IMAGE_LINK_RE
 
 from zogn.conf import (CONTENT_PATH, POST_PATH, POST_SOURCE_FOLDER_NAME, POST_HTML_FOLDER_NAME, SITE_SETTINGS,
-                       POST_DATA, SLUG_TO_PATH)
+                       POST_DATA, SLUG_TO_PATH, BASE_DIR)
 
 
 class ImageInlineProcessor(LinkInlineProcessor):
@@ -61,10 +65,68 @@ class MyMarkdown(Markdown):
 
 
 class MyRenderer(HTMLRenderer):
+
+    def clean_path(self, path):
+        # 判断是否是完整的URL路径
+        is_url = path.startswith(('http://', 'https://', "https:/", 'http:/'))
+
+        # 将路径规范化，处理多余的分隔符和相对路径
+        cleaned_path = os.path.normpath(path)
+
+        # 如果是完整的URL路径，则不添加斜杠
+        if is_url:
+            return cleaned_path
+
+        # 切分路径为目录和文件名
+        directory, filename = os.path.split(cleaned_path)
+
+        # 处理目录部分，去除多余的 "../"
+        components = directory.split(os.sep)
+        cleaned_components = [component for component in components if component not in ('..', '')]
+
+        # 重新构建清理后的路径，保留根目录斜杠
+        cleaned_directory = os.path.join("/", *cleaned_components)
+
+        # 最终路径
+        cleaned_path = os.path.join(cleaned_directory, filename)
+
+        return cleaned_path
+
+    def convert_and_save_image(self, input_path, output_format="WEBP"):
+        if input_path.startswith(('http://', 'https://', "https:/", 'http:/')):
+            return input_path
+
+        # 构建输出路径，将文件名的扩展名更改为指定的格式
+        output_path = os.path.splitext(input_path)[0] + "." + output_format.lower()
+        save_path = BASE_DIR.as_posix().strip() + output_path.strip()
+
+        if os.path.exists(save_path):
+            return output_path
+
+        fullpath = BASE_DIR.as_posix().strip() + input_path.strip()
+        # 打开图像文件
+        img = Image.open(fullpath)
+
+        # 转换并保存图像
+        img.convert("RGB").save(save_path, format=output_format, quality=85)
+        return output_path
+
     def paragraph(self, text):
         if "<br>" in text:
             return '<p>' + text + '</p><br>\n'
         return '<p>' + text + '</p>\n'
+
+    def image(self, src, alt="", title=None):
+        src = self._safe_url(src)
+
+        unquote_src = self.clean_path(unquote(src))
+        img_src = quote(self.convert_and_save_image(unquote_src))
+
+        alt = escape_html(alt)
+        s = '<img src="' + img_src + '" alt="' + alt + '"'
+        if title:
+            s += ' title="' + escape_html(title) + '"'
+        return s + ' />'
 
 
 def content2markdown(content):
@@ -128,11 +190,11 @@ def load_all_articles():
             metadata, content = parse_markdown(f)
             if metadata["status"] == "draft":
                 continue
+            metadata["content"] = content
+            metadata["slug"] = str(metadata["slug"])
+            metadata["title"] = str(metadata["title"])
             metadata["body"] = content2markdown(content)
             metadata["abstract"] = content2markdown(extract_abstract(content, 200))
-            metadata["content"] = content
-            # metadata["year"] = p.parts[-2]
-            # metadata["url"] = f'/{POST_FOLDER_NAME}/{metadata["year"]}/{metadata["slug"]}.html'
             metadata["url"] = f'/{POST_HTML_FOLDER_NAME}/{metadata["slug"]}' if POST_HTML_FOLDER_NAME else f'/{metadata["slug"]}'
             metadata = refactor_metadata_tags_and_category(metadata)
             articles.append(metadata)
@@ -147,7 +209,18 @@ def extract_abstract(content, length):
     content = content.replace("#", "")
     if len(content.strip()) <= length:
         return content
-    return content[:length] + "……"
+
+    # 找到最大长度内的最后一个段落的结束位置
+    last_paragraph_end = content.rfind('\n', 0, length)
+
+    # 如果找不到段落结束位置，则直接截取到最大长度
+    if last_paragraph_end == -1:
+        return content[:length]
+
+    # 截取到最后一个段落的结束位置
+    truncated_text = content[:last_paragraph_end]
+
+    return truncated_text + "……"
 
 
 def check_repeat_slug():
@@ -180,10 +253,9 @@ def parse_sitemap():
 
 def parse_archive(articles):
     grouped_data = {}
-    sorted_articles = sorted(articles, key=itemgetter('date'))
-    for year, group in groupby(sorted_articles, key=lambda x: x['date'].year):
-        grouped_data[year] = list(group)
-
+    sorted_articles = sorted(articles, key=itemgetter('date'), reverse=True)
+    for month, group in groupby(sorted_articles, key=lambda x: x['date'].strftime('%Y年%m月')):
+        grouped_data[month] = list(group)
     return grouped_data
 
 
