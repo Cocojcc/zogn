@@ -68,7 +68,7 @@ class MyRenderer(HTMLRenderer):
 
     def clean_path(self, path):
         # 判断是否是完整的URL路径
-        is_url = path.startswith(('http://', 'https://', "https:/", 'http:/'))
+        is_url = path.startswith(('http:', 'https:'))
 
         # 将路径规范化，处理多余的分隔符和相对路径
         cleaned_path = os.path.normpath(path)
@@ -93,7 +93,7 @@ class MyRenderer(HTMLRenderer):
         return cleaned_path
 
     def convert_and_save_image(self, input_path, output_format="WEBP"):
-        if input_path.startswith(('http://', 'https://', "https:/", 'http:/')):
+        if input_path.startswith(('http:', 'https:')):
             return input_path
 
         # 构建输出路径，将文件名的扩展名更改为指定的格式
