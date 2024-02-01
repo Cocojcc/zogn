@@ -2,13 +2,11 @@ from xml.etree import ElementTree as etree
 
 import yaml, re, os
 import mistune
-from bs4 import BeautifulSoup
-
-from collections import OrderedDict
 from PIL import Image
 from urllib.parse import unquote, quote
+from copy import deepcopy
 
-from mistune import HTMLRenderer, escape_html, escape
+from mistune import HTMLRenderer, escape_html
 
 from itertools import groupby
 from operator import itemgetter
@@ -16,7 +14,7 @@ from operator import itemgetter
 from markdown import Markdown
 from markdown.inlinepatterns import LinkInlineProcessor, IMAGE_LINK_RE
 
-from zogn.conf import (CONTENT_PATH, POST_PATH, POST_SOURCE_FOLDER_NAME, POST_HTML_FOLDER_NAME, SITE_SETTINGS,
+from zogn.conf import (CONTENT_PATH, POST_PATH, POST_HTML_FOLDER_NAME, DAILY_PATH,
                        POST_DATA, SLUG_TO_PATH, BASE_DIR)
 
 
@@ -138,7 +136,7 @@ def content2markdown(content):
         return '\n<br>\n' + match.group(1)[:1]
 
     # 使用 re.sub() 函数进行替换，传入替换函数和输入字符串
-    content = re.sub(pattern, replace_newlines, content)
+    # content = re.sub(pattern, replace_newlines, content)
 
     # md = MyMarkdown(extensions=[
     #     'markdown.extensions.extra',
@@ -172,13 +170,14 @@ def parse_markdown(file):
 
 def refactor_metadata_tags_and_category(metadata):
     # 计算文章的分类和标签链接
-    category = metadata.pop("category")
+    category = metadata.pop("category", "draft")
     metadata["category"] = {"name": category, "url": f"/category/{category}"}
-    tags = metadata.pop("tags")
-    metadata["tags"] = [{"name": tag, "url": f"/tag/{tag}"} for tag in tags]
-
     metadata["tdk_category"] = category
+
+    tags = metadata.pop("tags", [])
+    metadata["tags"] = [{"name": tag, "url": f"/tag/{tag}"} for tag in tags]
     metadata["tdk_tags"] = tags
+
     return metadata
 
 
@@ -194,7 +193,9 @@ def load_all_articles():
             metadata["slug"] = str(metadata["slug"])
             metadata["title"] = str(metadata["title"])
             metadata["body"] = content2markdown(content)
-            metadata["abstract"] = content2markdown(extract_abstract(content, 200))
+            abstract, is_more = extract_abstract(content, 200)
+            metadata["abstract"] = content2markdown(abstract)
+            metadata["is_more"] = is_more
             metadata["url"] = f'/{POST_HTML_FOLDER_NAME}/{metadata["slug"]}' if POST_HTML_FOLDER_NAME else f'/{metadata["slug"]}'
             metadata = refactor_metadata_tags_and_category(metadata)
             articles.append(metadata)
@@ -205,22 +206,47 @@ def load_all_articles():
     return articles
 
 
+def load_all_daily():
+    dailies = []
+
+    for p in DAILY_PATH.rglob("**/*.md"):
+        with p.open("r", encoding="utf-8") as f:
+            metadata, content = parse_markdown(f)
+            if metadata["status"] == "draft":
+                continue
+            metadata["content"] = content
+            metadata["slug"] = str(metadata["slug"])
+            metadata["title"] = str(metadata["title"])
+            metadata["body"] = content2markdown(content)
+            abstract, is_more = extract_abstract(content, 200)
+            metadata["abstract"] = content2markdown(abstract)
+            metadata["is_more"] = is_more
+            metadata["url"] = f'/{POST_HTML_FOLDER_NAME}/{metadata["slug"]}' if POST_HTML_FOLDER_NAME else f'/{metadata["slug"]}'
+            metadata = refactor_metadata_tags_and_category(metadata)
+            dailies.append(metadata)
+
+            SLUG_TO_PATH[f"{metadata['slug']}"] = p.as_posix()
+
+    dailies.sort(key=lambda x: x["date"], reverse=True)
+    return dailies
+
+
 def extract_abstract(content, length):
     content = content.replace("#", "")
     if len(content.strip()) <= length:
-        return content
+        return content, False
 
     # 找到最大长度内的最后一个段落的结束位置
     last_paragraph_end = content.rfind('\n', 0, length)
 
     # 如果找不到段落结束位置，则直接截取到最大长度
     if last_paragraph_end == -1:
-        return content[:length]
+        return content[:length], False
 
     # 截取到最后一个段落的结束位置
     truncated_text = content[:last_paragraph_end]
 
-    return truncated_text + "……"
+    return truncated_text + "……", True
 
 
 def check_repeat_slug():
@@ -253,8 +279,7 @@ def parse_sitemap():
 
 def parse_archive(articles):
     grouped_data = {}
-    sorted_articles = sorted(articles, key=itemgetter('date'), reverse=True)
-    for month, group in groupby(sorted_articles, key=lambda x: x['date'].strftime('%Y年%m月')):
+    for month, group in groupby(articles, key=lambda x: x['date'].strftime('%Y年%m月')):
         grouped_data[month] = list(group)
     return grouped_data
 
@@ -284,29 +309,40 @@ def parse_about():
 
 
 def find_previous_and_next(current, articles):
+    articles = sorted(articles, key=itemgetter('date'), reverse=True)
     index = articles.index(current)
 
-    # 获取上一个文件
-    previous_article = articles[index - 1] if index > 0 else None
+    # 根据日期获取下一篇文章
+    next_article = articles[index - 1] if index > 0 else None
 
-    # 获取下一个文件
-    next_article = articles[index + 1] if index < len(articles) - 1 else None
+    # 根据日期获取上一篇文章
+    previous_article = articles[index + 1] if index < len(articles) - 1 else None
 
     return previous_article, next_article
+
+
+def insert_prev_and_next(articles):
+    for i, article in enumerate(articles):
+        prev_article, next_article = find_previous_and_next(article, articles)
+        if i == 0:
+            article["prev_article"] = {"slug": prev_article["slug"], "title": prev_article["title"]}
+        elif i == len(articles) - 1:
+            article["next_article"] = {"slug": next_article["slug"], "title": next_article["title"]}
+        else:
+            article["next_article"] = {"slug": next_article["slug"], "title": next_article["title"]}
+            article["prev_article"] = {"slug": prev_article["slug"], "title": prev_article["title"]}
+    return articles
 
 
 def load_all_data():
     articles = load_all_articles()
 
-    for i, article in enumerate(articles):
-        prev_article, next_article = find_previous_and_next(article, articles)
-        if i == 0:
-            article["next_article"] = {"slug": next_article["slug"], "title": next_article["title"]}
-        elif i == len(articles) - 1:
-            article["prev_article"] = {"slug": prev_article["slug"], "title": prev_article["title"]}
-        else:
-            article["prev_article"] = {"slug": prev_article["slug"], "title": prev_article["title"]}
-            article["next_article"] = {"slug": next_article["slug"], "title": next_article["title"]}
+    dailies = load_all_daily()
+    articles.extend(dailies)
+
+    articles = sorted(articles, key=itemgetter('date'), reverse=True)
+
+    articles = insert_prev_and_next(articles)
 
     # 分类
     categories = parse_category(articles)
@@ -328,6 +364,7 @@ def load_all_data():
         "total": {
             "category": categories_count, "tag": tags_count, "archive": archives_count
         },
+        "recently": articles[:6]
     }
 
     POST_DATA.update(**result)

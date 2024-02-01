@@ -46,22 +46,39 @@ def build_article(articles):
 
 def build_category(articles):
     category_dict = parse_category(articles)
+    path_prefix = conf.HTML_OUTPUT_PATH.joinpath("category")
+    path_prefix.mkdir(parents=True, exist_ok=True)
+    pagination_num = conf.PAGINATION_NUM
     for category_name, articles in category_dict.items():
-        html = render_to_html("post/category.html", articles=articles, category_name=category_name)
-        path_prefix = conf.HTML_OUTPUT_PATH.joinpath("category")
-        path_prefix.mkdir(parents=True, exist_ok=True)
-        save_path = path_prefix.joinpath(category_name + ".html")
-        writer(save_path, html)
+        paginator = Pagination(articles, pagination_num, page_tag=category_name, page_suffix="category")
+        page_count = paginator.page_count
+
+        for i in range(1, page_count + 1):
+            html = render_to_html("post/category.html", articles=paginator.paginate(i), category_name=category_name, page=paginator)
+            if i == 1:
+                save_path = path_prefix.joinpath(f"{category_name}.html")
+            else:
+                save_path = path_prefix.joinpath(f"{category_name}-page-{i}.html")
+            writer(save_path, html)
 
 
 def build_tags(articles):
     tags_dict = parse_tag(articles)
+    path_prefix = conf.HTML_OUTPUT_PATH.joinpath("tag")
+    path_prefix.mkdir(parents=True, exist_ok=True)
+    pagination_num = conf.PAGINATION_NUM
+
     for tag_name, articles in tags_dict.items():
-        html = render_to_html("post/tag.html", articles=articles, tag_name=tag_name)
-        path_prefix = conf.HTML_OUTPUT_PATH.joinpath("tag")
-        path_prefix.mkdir(parents=True, exist_ok=True)
-        save_path = path_prefix.joinpath(tag_name + ".html")
-        writer(save_path, html)
+        paginator = Pagination(articles, pagination_num, page_tag=tag_name, page_suffix="tag")
+        page_count = paginator.page_count
+
+        for i in range(1, page_count + 1):
+            html = render_to_html("post/tag.html", articles=paginator.paginate(i), tag_name=tag_name, page=paginator)
+            if i == 1:
+                save_path = path_prefix.joinpath(f"{tag_name}.html")
+            else:
+                save_path = path_prefix.joinpath(f"{tag_name}-page-{i}.html")
+            writer(save_path, html)
 
 
 def build_all_tags(articles):
@@ -152,14 +169,13 @@ def build_static():
     if ico_file.exists():
         shutil.copy2(ico_file, conf.HTML_OUTPUT_PATH)
 
+    robots = conf.STATIC_FOLDER.joinpath("robots.txt")
+    if robots.exists():
+        shutil.copy2(robots, conf.HTML_OUTPUT_PATH)
+
 
 def build_index(articles):
-    # html = render_to_html("index.html", articles=articles)
-    # save_path = conf.HTML_OUTPUT_PATH.joinpath("index.html")
-    # writer(save_path, html)
-
     pagination_num = conf.PAGINATION_NUM
-
     paginator = Pagination(articles, pagination_num, page_tag="index")
     page_count = paginator.page_count
 
@@ -180,7 +196,7 @@ def build_archives(articles):
 
 class Pagination:
 
-    def __init__(self, articles: list, limit: int, current_page=1, page_tag=None):
+    def __init__(self, articles: list, limit: int, current_page=1, page_tag=None, page_suffix=""):
         self.articles = articles
         self.limit = limit
 
@@ -190,6 +206,7 @@ class Pagination:
         self.page_count = page_count
         self.current_page = current_page
         self.page_tag = page_tag
+        self.page_suffix = page_suffix
 
     @property
     def start(self):
@@ -213,16 +230,28 @@ class Pagination:
 
     @property
     def prev_page_path(self):
-        if self.current_page == 2:
-            return "/"
-        elif self.current_page == 1:
-            return None
+
+        if self.page_suffix:
+            if self.current_page == 2:
+                return f"/{self.page_suffix}/{self.page_tag}"
+            elif self.current_page == 1:
+                return None
+            else:
+                return f"/{self.page_suffix}/{self.page_tag}-page-{self.current_page - 1}"
         else:
-            return f"/{self.page_tag}-page-{self.current_page - 1}"
+            if self.current_page == 2:
+                return "/"
+            elif self.current_page == 1:
+                return None
+            else:
+                return f"/{self.page_tag}-page-{self.current_page - 1}"
 
     @property
     def next_page_path(self):
-        return f"/{self.page_tag}-page-{self.current_page + 1}" if self.has_next else None
+        if self.page_suffix:
+            return f"/{self.page_suffix}/{self.page_tag}-page-{self.current_page + 1}" if self.has_next else None
+        else:
+            return f"/{self.page_tag}-page-{self.current_page + 1}" if self.has_next else None
 
 
 def build_rss(articles):

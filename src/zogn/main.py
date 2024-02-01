@@ -1,17 +1,33 @@
 import os
-from flask import g
+import re
 
 from zogn.builders import build_article, build_category, build_about, build_sitemap, writer, build_static, \
     build_index, build_tags, build_all_tags, build_rss, build_links, build_archives
 import click
-from datetime import date
+from datetime import date, datetime
 from slugify import slugify
 
-from zogn.parsers import load_all_articles, check_repeat_slug
+from zogn.parsers import check_repeat_slug
 from zogn.server import app
 from zogn import conf
 import functools
 import shutil
+
+pattern = r'(\d{4}年\d{2}月\d{2}日\s周[一二三四五六日].*?)\n(.*?)(?=\d{4}年\d{2}月\d{2}日|\Z)'
+meta_pattern = r'(\d{4}年\d{2}月\d{2}日)\s(周[一二三四五六日])\s·(.*?)\s·|(\d{4}年\d{2}月\d{2}日)\s(周[一二三四五六日])'
+
+DAYOFWEEK = {
+    "周一": "Mon",
+    "周二": "Tue",
+    "周三": "Wed",
+    "周四": "Thu",
+    "周五": "Fri",
+    "周六": "Sat",
+    "周日": "Sun",
+}
+
+
+# meta_pattern = r'(\d{4}年\d{2}月\d{2}日)\s(周[一二三四五六日])'
 
 
 def root_command(func):
@@ -100,6 +116,44 @@ def init_command(name):
 
     writer(project_path.joinpath("settings.toml"), conf.TOML_TEMPLATE)
     writer(project_path.joinpath(conf.CONTENT_FOLDER_NAME, "about.md"), "")
+
+
+@cli.command("load", short_help="加载日志")
+@click.argument("filepath")
+def init_command(filepath):
+    text = open(filepath, "r").read()
+    matches = re.findall(pattern, text, re.DOTALL)
+    for match in matches:
+        daily_meta, content = match
+        # content = content.replace('\n', '\n\n')
+        daily_metas = re.search(meta_pattern, daily_meta.strip())
+        daily_date, daily_day, daily_weather, _daily_date, _daily_day = daily_metas.groups()
+        if _daily_day is None:
+            article_date = daily_date
+            article_day = daily_day
+            article_weather = daily_weather
+        else:
+            article_date = _daily_date
+            article_day = _daily_day
+            article_weather = daily_weather
+
+        article_date = datetime.strptime(article_date, "%Y年%m月%d日")
+        daily_title = article_date.strftime("%Y%m%d")
+
+        tmp_str_list = []
+        embedded_data = {"title": daily_title, "slug": daily_title, "category": "日常", "status": "public",
+                         "date": article_date.strftime("%Y-%m-%d"), "day": article_day, "tag": [],
+                         "weather": article_weather if article_weather else ""}
+        for key, val in embedded_data.items():
+            tmp_str_list.append(f"{key}: {val}")
+        meta_str = "\n".join(tmp_str_list)
+        template = conf.DEFAULT_POST_TEMPLATE.format(meta_str).strip()
+        template += "\n" + content
+        parent_folder = conf.DAILY_PATH.joinpath(article_date.strftime("%Y"), article_date.strftime("%Y%m"))
+        parent_folder.mkdir(parents=True, exist_ok=True)
+
+        filename = parent_folder.joinpath(daily_title)
+        writer(f'{filename}.md', template)
 
 
 @cli.command("server", short_help="本地预览")

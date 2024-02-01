@@ -52,14 +52,32 @@ def page(page):
 def category(name):
     categories = POST_DATA["categories"]
     articles = categories.get(name) or []
-    return render_to_html("post/category.html", articles=articles, category_name=name)
+    paginator = Pagination(articles, 5, page_tag=name, page_suffix="category")
+    return render_to_html("post/category.html", articles=paginator.paginate(1), category_name=name, page=paginator)
+
+
+@app.route("/category/<name>-page-<int:page>")
+def category_page(name, page):
+    categories = POST_DATA["categories"]
+    articles = categories.get(name) or []
+    paginator = Pagination(articles, 5, page_tag=name, page_suffix="category")
+    return render_to_html("index.html", articles=paginator.paginate(page), page=paginator)
 
 
 @app.route("/tag/<name>")
 def tag(name):
     tags = POST_DATA["tags"]
     articles = tags.get(name) or []
-    return render_to_html("post/tag.html", articles=articles, tag_name=name)
+    paginator = Pagination(articles, 5, page_tag=name, page_suffix="tag")
+    return render_to_html("post/tag.html", articles=paginator.paginate(1), tag_name=name, page=paginator)
+
+
+@app.route("/tag/<name>-page-<int:page>")
+def tag_page(name, page):
+    tags = POST_DATA["tags"]
+    articles = tags.get(name) or []
+    paginator = Pagination(articles, 5, page_tag=name, page_suffix="tag")
+    return render_to_html("post/tag.html", articles=paginator.paginate(page), page=paginator, tag_name=name)
 
 
 @app.route("/about")
